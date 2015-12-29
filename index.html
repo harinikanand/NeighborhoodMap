@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Neighborhood Map Project - Forest Preserves</title>
+    <link href="css/style.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale = 1.0, maximum-scale=1.0, user-scalable=no" />
+</head>
+<body>
+    <!-- Title -->
+    <h1 class="title-name"> Chicago Area Forest Preserves Map </h1>
+
+    <!-- div contains a input box for filter text and an ul to show forest preserve list -->
+    <div class="filter-list-map-markers">
+        <label for="filter">Filter:</label>
+        <input type="text" data-bind="value: filter, valueUpdate: 'afterkeydown'" />
+        <button class="clear" data-bind="click: clear">Clear</button>
+        <ul data-bind="foreach: filteredMarkers">
+            <li data-bind="text: name, click: $parent.displayMarker"></li>
+        </ul>
+    </div>
+
+    <!-- div to show google map -->
+    <div class="map-view" data-bind="googlemap: {locations: filteredMarkers, centerLat: 42.060047, centerLon: -87.770280}"></div>
+
+    <!-- div to show wikipedia results -->
+    <div class="wikipedia-container">
+    <h3 id="wikipedia-header">Relevant Wikipedia Links about the area </h3>
+    <hr>
+    <ul id="wikipedia-links">Select a Forest Preserve and find relevant Wikipedia articles here!</ul>
+    </div>
+
+    <!-- div to show yelp results -->
+    <div class="yelp-container">
+    <h3 id="yelp-header">Relevant Yelp Reviews about the area </h3>
+    <hr>
+    <ul id="yelp-links">Select a Forest Preserve and find relevant Yelp articles/reviews!</ul>
+    </div>
+
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=places"></script>
+    <script type="text/javascript" src="http://oauth.googlecode.com/svn/code/javascript/oauth.js"></script>
+    <script type="text/javascript" src="http://oauth.googlecode.com/svn/code/javascript/sha1.js"></script>
+    <script src="js/libs/knockout-3.4.0.js"></script>
+    <script src="js/libs/jquery.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</body>
+</html>
+ 
