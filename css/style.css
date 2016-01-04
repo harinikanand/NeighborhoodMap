@@ -9,9 +9,9 @@ html {
 
 .title-name {
   text-align: center;
-  font-family: Helvetica Narrow, sans-serif;
+  font-family: helvetica narrow, sans-serif;
   font-style: italic;
-  color: #B7B1AF;
+  color: #b7b1af;
   padding: 40px;
   width: 100%;
   margin: 0;
@@ -22,17 +22,15 @@ html {
 .filter-list-map-markers {
   float: left;
   width: 25%;
-  color: #B7B1AF;
+  color: #b7b1af;
   font-size: 30px;
   height: 800px;
   background: rgba(0, 0, 0, 0.45);
   background-size: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 ul {
-  list-style-type: none;
+  list-style-type: disc;
   padding-top: 5%;
   padding-bottom: 5%;
 }
@@ -42,7 +40,7 @@ li {
   padding-bottom: 2%;
 }
 
-.map-view {
+#map-view {
   float: left;
   width: 50%;
   height: 800px;
@@ -52,62 +50,35 @@ li {
     float:right;
     width: 25%;
     font-size: 24px;
-    color: #B7B1AF;
+    color: #b7b1af;
     background: rgba(0, 0, 0, 0.45);
     height: 400px;
-    text-align: center;
     overflow-y: scroll;
     overflow-x: hidden;
     margin-bottom: 0.5%;
 }
 
-#wikipedia-links {
-    font-size: 22px;
-    color: #B7B1AF;
-
-}
 
 a {
     font-size: 22px;
-    color: #B7B1AF;
+    color: #b7b1af;
 }
 
 .yelp-container {
     float: right;
     width: 25%;
     font-size: 24px;
-    color: #B7B1AF;
+    color: #b7b1af;
     background: rgba(0, 0, 0, 0.45);
     height: 400px;
-    text-align: center;
     overflow-y: scroll;
     overflow-x: hidden;
 }
 
-#yelp-links {
-  font-size: 22px;
-  color: #B7B1AF;
-}
-
-@media only screen and (max-width: 1024px) {
-li {
-   font-size: 20px;
-}
-
-a {
-  font-size: 18px;
-  padding-bottom: 10;
-}
-
-.yelp-container {
-  float: none;
-}
-}
-
-@media only screen and (max-width: 450px) { 
+@media only screen and (max-width: 1500px) { 
 .title-name {
   font-size: 20px;
-  text-align: left;
+  text-align: center;
 }
 
 .filter-list-map-markers {
@@ -116,17 +87,18 @@ a {
   font-size: 15px;
 }
 
-.map-view {
+#map-view {
   width: 65%;
+  margin-bottom: 5%;
 }
 
 li {
-  font-size: 15px;
+  font-size: 20px;
   text-align: left;
 }
 
 a {
-  font-size: 15px;
+  font-size: 20px;
   padding-bottom: 10;
 }
 
@@ -135,10 +107,48 @@ a {
   width: 100%;
   margin-top: 5%;
   margin-bottom: 5%;
+  text-align: center;
 }
 
 .yelp-container {
   width: 100%;
   float: none;
+  text-align: center;
+}
+
+.review-title {
+  font-size: 22px;
+}
+
+.review-links {
+  font-size: 20px;
+  text-align: center;
+}
+}
+
+@media only screen and (max-width: 450px) {
+.title-name {
+  font-size: 15px;
+  text-align: left;
+}
+
+li {
+  font-size: 15px;
+}
+
+a {
+  font-size: 15px;
+}
+
+h3 {
+  font-size: 22px;
+}
+
+.review-title {
+  font-size: 20px;
+}
+
+input[type="text"] {
+    width: 80px;
 }
 }

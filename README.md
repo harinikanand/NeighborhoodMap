@@ -7,6 +7,7 @@ Date: 12/28/2015
 Prerequisites:
 ==============
 1. Download this project (Neighborhood Map) from github
+URL: https://github.com/harinikanand/NeighborhoodMap
 
 Instructions to view the Neighborhood Map:
 =========================================

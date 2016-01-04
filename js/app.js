@@ -1,3 +1,4 @@
+'use strict';
 // Array to store information about forest preserve areas in Chicago
 // stores name, street, city, latitude and longitude
 var mapMarkerData = [
@@ -30,25 +31,11 @@ var mapMarkerData = [
     longitude: -87.831988
 },
 {
-    name: 'Edgebrook Woods',
-    street: '6129 N Central Ave',
-    city: 'River Forest, IL 60646',
-    latitude: 41.996465,
-    longitude: -87.763633
-},
-{
     name: 'Portage Woods',
     street: 'W 47th St',
     city: 'Berwyn, IL 60402',
     latitude: 41.810603,
     longitude: -87.804270
-},
-{
-    name: 'LaBagh Woods',
-    street: '4600-4628 W Foster Ave',
-    city: 'Chicago, IL 60630',
-    latitude: 41.979648,
-    longitude: -87.743775
 },
 {
     name: 'Forest Glen Woods Picnic Grove',
@@ -65,25 +52,11 @@ var mapMarkerData = [
     longitude: -87.740006
 },
 {
-    name: 'Fullerton Woods',
-    street: '8413 W Fullerton Ave',
-    city: 'River Grove, IL 60171',
-    latitude: 41.920529,
-    longitude: -87.839088
-},
-{
     name: 'Catherine Chevalier Woods',
     street: '5564 N East River Rd',
     city: 'Chicago, IL 60706',
     latitude: 41.976463,
     longitude: -87.852520
-},
-{
-    name: 'Schiller Woods',
-    street: 'Schiller Woods South',
-    city: 'Schiller Park, IL 60634',
-    latitude: 41.946759,
-    longitude: -87.847609
 },
 {
     name: 'Eggers Grove',
@@ -100,32 +73,11 @@ var mapMarkerData = [
     longitude: -87.789930
 },
 {
-    name: 'Harms Woods',
-    street: '352 Harms Rd',
-    city: 'Skokie, IL 60077',
-    latitude: 42.060047,
-    longitude: -87.770280
-},
-{
-    name: 'Beaubien Forest Preserve',
-    street: '1 W Doty Ave S',
-    city: 'Chicago, IL 60633',
-    latitude: 41.649450,
-    longitude: -87.585304
-},
-{
     name: 'White Eagle Woods',
     street: '7317 40th St',
     city: 'Lyons, IL 60534',
     latitude: 41.822695,
     longitude: -87.806113
-},
-{
-    name: 'Fullersburg County Forest Preserve',
-    street: '3609 Spring Rd',
-    city: 'Oak Brook, IL 60523',
-    latitude: 41.835876,
-    longitude: -87.934365
 },
 {
     name: 'Hiawatha Park',
@@ -140,14 +92,7 @@ var mapMarkerData = [
     city: 'Riverside, IL 60546',
     latitude: 41.844126,
     longitude: -87.828845
-},
-{
-    name: 'William W. Powers Picnic Park',
-    street: '12949 S Avenue O',
-    city: 'Chicago, IL 60633',
-    latitude: 41.666936,
-    longitude: -87.524253
-}]
+}];
 
 // Global array variable to hold makers
 var markers = [];
@@ -159,10 +104,6 @@ var infoWindows_content = [];
 var mapInitialized = false;
 // Global variable to hold the map object
 var globalMap;
-// points to wikipedia-links document element in the HTML DOM
-var $wikiElem = $('#wikipedia-links');
-// points to yelp-links document element in the HTML DOM
-var $yelpElem = $('#yelp-links');
 
 // MapMarker object which is part of the data Model
 // It contains name, street, city, latitude
@@ -192,7 +133,8 @@ var MapMarker = function(data) {
     this.latlon2 = ko.computed(function() {
         return this.latitude() + "," + this.longitude();
     }, this);
-}
+};
+
 
 // ViewModel:
 // 1. It creates the markerList - a knockout observable array
@@ -203,12 +145,15 @@ var MapMarker = function(data) {
 // filteredMarkers is dependent on the filter string.
 var ViewModel = function() {
     var self = this;
+    var markers_len = 0;
 
     //create markerList, an observable Array with the MapMarker objects
     //corresponding to all the forest preserve areas listed above
+    // markers_len gathered here will be used in other places in this file
     this.markerList = ko.observableArray([]);
-    mapMarkerData.forEach(function(mapItem){
+    mapMarkerData.forEach(function(mapItem) {
         self.markerList.push(new MapMarker(mapItem));
+        markers_len++;
     });
 
     // stringStartsWith is a function that returns true or false based on 
@@ -223,27 +168,46 @@ var ViewModel = function() {
     // filter - a observable that contains the filter search string
     this.filter = ko.observable("");
 
+
+    this.wikiTitle = ko.observable('Click on a Forest Preserve in the list and find relevant Wikipedia reviews here!');
+
+    var WikiReview = function(titlename, url) {
+        this.name = titlename;
+        this.url = url;
+    };
+
+    this.wikiReviews = ko.observableArray([]);
+
+    this.yelpTitle = ko.observable('Click on a Forest Preserve in the list and find relevant yelp reviews here!');
+
+    var YelpReview = function(titlename, url, ratingImage) {
+        this.name = titlename;
+        this.url = url;
+        this.ratingImage = ratingImage;
+    };
+
+    this.yelpReviews = ko.observableArray([]);
+
     // filteredMarkers - a computed observable array based on:
     // 1. if fitler is not set, returns markerList as is
     //    along with that, if map is already initialized, it sets all the markers to be visible
     //    sets the marker animation to DROP and closes any open infoWindows for the markers.
-    //    It also resets the wikipedia results and yelp reviews to show default strings.
     // 2. if fitler is set then it first determines all the markers in MarkerList that begin with it.
     //    following that, if map is initialized, it identifies and only shows those markers on map that begin with the filter string
     //    Changes the marker animation to BOUNCE and also shows the infowindows for only those markers.
-    //    if the match is only one marker, then it also shows the wikipedia results and yelp reviews for that one forest preserve.
     // This leads to display fitlered list and showing only the filtered markers on the map.
-    this.filteredMarkers = ko.computed(function(){
+    this.filteredMarkers = ko.computed(function() {
         var filter = this.filter().toLowerCase();
+        displayWikipediaReviews(-1);
+        displayYelpReviews(-1);
         if(!filter) {
-            if (mapInitialized == true) {
-               for (i = 0; i < markers.length; ++i) {
+            if (mapInitialized === true) {
+               for (var i = 0; i < markers_len; ++i) {
                     markers[i].setVisible(true);
+                    markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
                     markers[i].setAnimation(google.maps.Animation.DROP);
                     infoWindows[i].close(globalMap, markers[i]);
                 }
-                $wikiElem.text("Select a Forest Preserve in the list and find relevant Wikipedia articles here!");
-                $yelpElem.text("Select a Forest Preserve in the list and find relevant Yelp articles/reviews here!");
             }
             return this.markerList();
         } else {
@@ -251,199 +215,224 @@ var ViewModel = function() {
                 return stringStartsWith(marker.name().toLowerCase(), filter);
             });
             
-            if (mapInitialized == true) {
-                for (i = 0; i < markers.length; ++i) {
+            if (mapInitialized === true) {
+                for (var i = 0; i < markers_len; ++i) {
                     markers[i].setVisible(true);
                 }
-                for (i = 0; i < markers.length; ++i) {
+                for (var i = 0; i < markers_len; ++i) {
                     var found = false;
                     var titleName = markers[i].getTitle();
-                    for (j = 0; j < newMarkerList.length;++j) {
+                    for (var j = 0; j < newMarkerList.length;++j) {
                        if (titleName === newMarkerList[j].name()) {
                           found = true;
                        }
                     }
-                    if (found == false) {
+                    if (found === false) {
                         markers[i].setVisible(false); // marker not is filtered list, so do no show it on map
                         infoWindows[i].close(globalMap, markers[i]); // close the infoWindow 
                     } else { // marker in filtered list
                         markers[i].setAnimation(google.maps.Animation.BOUNCE); // set marker animation to Bounce
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
                         infoWindows[i].setContent(infoWindows_content[i]); // set and show the infoWindow for the marker
                         infoWindows[i].open(globalMap, markers[i]);
                     }
-                }
-                if (newMarkerList.length == 1) { // only one marker in filtered list, so show wikiLinks and Yelp reviews
-                    displayWikiLinks(newMarkerList[0].latlon());
-                    displayYelpLinks(newMarkerList[0].address(), newMarkerList[0].latlon2(), newMarkerList[0].name());
-                } else { // Multiple markers in the list, so show default strings for wikiLinks and yelp reviews
-                    $wikiElem.text("Select a Forest Preserve in the list and find relevant Wikipedia articles here!");
-                    $yelpElem.text("Select a Forest Preserve in the list and find relevant Yelp articles/reviews here!");
                 }
             }
            return newMarkerList;
         }
      }, this);
 
-    // displayWikiLinks = shows the Wikipedia results for a given latlon
-    // used the geosearch option in the media wiki api
-    // Implemented Error handing if response does not return within 8000ms
-    // used ajax jsonp query with the url
-    // the reponse is filtered, formatted and displayed as part of wikipedia-links
-    // DOM element
-    function displayWikiLinks(latlon) {
-        //start with setting empty string to the wikipedia-links element
-        $wikiElem.text("");
-
-        // Plug in the latlon provided in the wiki media geosearch URL
-        var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=10000&gslimit=10&gscoord='+latlon+'&format=json&callback=?';
-        // Error handling - if no response, an error is shown
-        var wikiRequestTimeout = setTimeout(function() {
-            $wikiElem.text("failed to get wikipedia results");
-        }, 8000);
-
-        $.ajax({
-            url: wikiUrl,
-            dataType: 'jsonp',
-            success: function(response) {
-                var articleList = response.query["geosearch"];
-
-                for (var i=0;i < articleList.length; i++) {
-                    articlePageId = articleList[i].pageid;
-                    articleTitle = articleList[i].title;
-                    var url = 'https://en.wikipedia.org/?curid=' + articlePageId;
-                    $wikiElem.append('<li><a href="'+url+'">'+articleTitle+'</a></li>');
-                }
-                clearTimeout(wikiRequestTimeout);
-            }
-        });
-    }
-
-    // displayYelpLinks = shows the Yelp reviews based on a given address, latlon and name
-    // used the Yelp API v2.0 with OAUTH to query parks category with the above criteria
-    // Implemented Error handing if response does not return within 8000ms
-    // used ajax jsonp query with the url
-    // the reponse is filtered, formatted and displayed as part of yelp-links
-    // DOM element
-    function displayYelpLinks(address, latlon2, name) {
-        // auth object to hold OAUTH 1.0 paramters
-        var auth = { 
-            consumerKey: "xWuLN66vI9E6iIqZZiFaUw", 
-            consumerSecret: "dm_9nosRLIE-7KV7jWNR6hNcXiA",
-            accessToken: "L4hQysaiwzPBkkmIRZO_3OHRs_zmlL_w",
-            accessTokenSecret: "v5p1MyECZrslYhjyN4FDjENpsdM",
-            serviceProvider: {
-                    signaureMethod: "HMAC-SHA1"
-                }
-            };
-        // parameters to search based on
-        var category = 'parks';
-        var address = address;
-        var cll = latlon2;
-        var name = name;
-        var accessor = {
-            consumerSecret: auth.consumerSecret,
-            tokenSecret: auth.accessTokenSecret
-        };
-        // All the search and oauth parameters are pushed to an array
-        var parameters = [];
-        parameters.push(['category_filter', category]);
-        parameters.push(['location', address]);
-        parameters.push(['cll',cll]);
-        parameters.push(['name',name]);
-        parameters.push(['callback', 'cb']);
-        parameters.push(['oauth_consumer_key', auth.consumerKey]);
-        parameters.push(['oauth_consumer_secret', auth.consumerSecret]);
-        parameters.push(['oauth_token', auth.accessToken]);
-        parameters.push(['oauth_signature_method', 'HMAC-SHA1']);
-
-        var message = { 
-            'action': 'http://api.yelp.com/v2/search',
-            'method': 'GET',
-            'parameters': parameters 
-        };
-
-        OAuth.setTimestampAndNonce(message);  
-        OAuth.SignatureMethod.sign(message, accessor);
-        var parameterMap = OAuth.getParameterMap(message.parameters);
-        parameterMap.oauth_signature = OAuth.percentEncode(parameterMap.oauth_signature);
-
-        //start with setting empty string to the yelp-links element
-        $yelpElem.text("");
-
-        // Error handling - if no response, an error is shown
-        var yelpRequestTimeout = setTimeout(function() {
-            $yelpElem.text("failed to get Yelp reviews");
-        }, 60000);
-
-        $.ajax({
-            'url': message.action,
-            'data': parameterMap,
-            'cache': true,
-            'dataType': 'jsonp',
-            'type': 'get',
-            'success': function(data, textStats, XMLHttpRequest) {
-                var articleList = data["businesses"];
-
-                for (var i=0;i < articleList.length; i++) {
-                    var url =  articleList[i].url;
-                    $yelpElem.append('<li><a href="'+url+'">'+articleList[i].name+" "+'</a><img src="'+articleList[i].rating_img_url+'"></li>');
-                }
-                clearTimeout(yelpRequestTimeout);
-            },
-            'error': function(data, textStats, XMLHttpRequest) {
-                console.log('Yelp query did not work');
-                console.log(XMLHttpRequest);
-                //$yelpElem.text("failed to get Yelp reviews");
-            }
-        });
-    }
-
     // displayMarker - the function is invoked when a forest preserve item is clicked
     this.displayMarker = function() {
-        //this function sets the filter to the name of the forest preserve.
-        //Due to binding, this results in updated filteredMarker array which then
-        //only shows this one marker
-        self.filter(this.name());
-        //Display wikipedia results and yelp reviews
-        displayWikiLinks(this.latlon());
-        displayYelpLinks(this.address(), this.latlon2(), this.name());
+        if (mapInitialized === true) {
+                for (var i = 0; i < markers_len; ++i) {
+                    if (markers[i].getTitle() === this.name()) {
+                        markers[i].setVisible(true);
+                        markers[i].setAnimation(google.maps.Animation.BOUNCE);
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+                        infoWindows[i].setContent(infoWindows_content[i]); 
+                        infoWindows[i].open(globalMap, markers[i]);
+                        displayWikipediaReviews(i);
+                        displayYelpReviews(i);
+                    } else {
+                        markers[i].setVisible(false);
+                        infoWindows[i].close(globalMap, markers[i]);
+                    }
 
+                }
+        }
+    };
+
+    this.showAll = function() {
+        if (mapInitialized === true) {
+                for (var i = 0; i < markers_len; ++i) {
+                        markers[i].setVisible(true);
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
+                        markers[i].setAnimation(google.maps.Animation.DROP);
+                        infoWindows[i].close(globalMap, markers[i]);            
+                }
+                displayWikipediaReviews(-1);
+                displayYelpReviews(-1);
+
+        }
+        this.filter("");
     };
 
     // clear - the function is invoked when clear button is selected by the user
     this.clear = function() {
         // this function sets filter to empty string
         this.filter("");
-    }
-}
+        displayWikipediaReviews(-1);
+        displayYelpReviews(-1);
+    };
 
-// Knockout js binding implementation for googlemap
-ko.bindingHandlers.googlemap = {
-    // init function - creates a google.maps.Map() object and initializes it
-    init: function (element, valueAccessor) {
-        var value = valueAccessor(),
-            mapOptions = {
-            zoom: 10,
-            panControl: false,
-            center: new google.maps.LatLng(value.centerLat, value.centerLon),
-            mapTypeId: google.maps.MapTypeId.TERRAIN
-            },
-            map = new google.maps.Map(element, mapOptions);
-          
+    // displayWikipediaReviews takes the index of the marker clicked by user
+    // (this is passed to the function by displayMarker function) and uses
+    // the ajax asynchronously query to Media Wiki API
+    // to obtain results and updates the wikiTitle and wikiReviews knockout observables 
+    // The Wiki URL uses geosearch and hence uses the latitude and longitude
+    function displayWikipediaReviews(clickedMarkerIndex) {
+
+        if (clickedMarkerIndex != -1) {
+
+            // Plug in the latlon provided in the wiki media geosearch URL
+            var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=10000&gslimit=10&gscoord='+self.markerList()[clickedMarkerIndex].latlon()+'&format=json&callback=?';
+            // Error handling - if no response, an error is shown
+            var wikiRequestTimeout = setTimeout(function() {
+               self.wikiReviews.removeAll();
+               self.wikiTitle('failed to get wikipedia results');
+            }, 8000);
+
+            $.ajax({
+                url: wikiUrl,
+                dataType: 'jsonp',
+                success: function(response) {
+                    self.wikiReviews.removeAll();
+                    var articleList = response.query["geosearch"];
+                    for (var i=0;i < articleList.length; i++) {
+                      var articlePageId = articleList[i].pageid;
+                      var articleTitle = articleList[i].title;
+                      var url = 'https://en.wikipedia.org/?curid=' + articlePageId;
+                      self.wikiReviews.push(new WikiReview(articleTitle, url));
+                    }
+                    clearTimeout(wikiRequestTimeout);
+                    self.wikiTitle('Wikipedia Results for ' + self.markerList()[clickedMarkerIndex].name());
+                }
+            });
+        } else {
+            self.wikiTitle('Click on a Forest Preserve in the list and find relevant Wikipedia reviews here!');
+            self.wikiReviews.removeAll();
+        }
+    };
+
+    // displayYelpReviews takes the index of the marker clicked by user
+    // (this is passed to the function by displayMarker function) and uses
+    // the ajax asynchronously query to Yelp API 2.0
+    // to obtain results and updates the yelpTitle and yelpReviews knockout observables 
+    // The Yelp URL uses geosearch and hence uses the latitude and longitude and also address
+    function displayYelpReviews(clickedMarkerIndex) {
+
+        if (clickedMarkerIndex != -1) {
+            // auth object to hold OAUTH 1.0 paramters
+            var auth = { 
+                consumerKey: "xWuLN66vI9E6iIqZZiFaUw", 
+                consumerSecret: "dm_9nosRLIE-7KV7jWNR6hNcXiA",
+                accessToken: "L4hQysaiwzPBkkmIRZO_3OHRs_zmlL_w",
+                accessTokenSecret: "v5p1MyECZrslYhjyN4FDjENpsdM",
+                serviceProvider: {
+                    signaureMethod: "HMAC-SHA1"
+                }
+            };
+            // parameters to search based on
+            var category = 'parks';
+            var accessor = {
+                consumerSecret: auth.consumerSecret,
+                tokenSecret: auth.accessTokenSecret
+            };
+            // All the search and oauth parameters are pushed to an array
+            var parameters = [];
+            parameters.push(['category_filter', category]);
+            parameters.push(['location', self.markerList()[clickedMarkerIndex].address()]);
+            parameters.push(['cll',self.markerList()[clickedMarkerIndex].latlon2()]);
+            parameters.push(['name',self.markerList()[clickedMarkerIndex].name()]);
+            parameters.push(['callback', 'cb']);
+            parameters.push(['oauth_consumer_key', auth.consumerKey]);
+            parameters.push(['oauth_consumer_secret', auth.consumerSecret]);
+            parameters.push(['oauth_token', auth.accessToken]);
+            parameters.push(['oauth_signature_method', 'HMAC-SHA1']);
+
+            var message = { 
+                'action': 'http://api.yelp.com/v2/search',
+                'method': 'GET',
+                'parameters': parameters 
+            };
+
+            OAuth.setTimestampAndNonce(message);  
+            OAuth.SignatureMethod.sign(message, accessor);
+            var parameterMap = OAuth.getParameterMap(message.parameters);
+            parameterMap.oauth_signature = OAuth.percentEncode(parameterMap.oauth_signature);
+
+
+            // Error handling - if no response, an error is shown
+            var yelpRequestTimeout = setTimeout(function() {
+                self.yelpTitle('failed to get Yelp reviews');
+                self.yelpReviews.removeAll();
+            }, 60000);
+
+            $.ajax({
+                'url': message.action,
+                'data': parameterMap,
+                'cache': true,
+                'dataType': 'jsonp',
+                'type': 'get',
+                'success': function(data, textStats, XMLHttpRequest) {
+                    var articleList = data["businesses"];
+                    //start with setting empty string to the yelp-links element
+                    self.yelpReviews.removeAll();
+
+                    for (var i=0;i < articleList.length; i++) {
+                        var url =  articleList[i].url;
+                        //yelp_content = yelp_content + '<li><a href="'+url+'">'+articleList[i].name+" "+'</a><img src="'+articleList[i].rating_img_url+'"></li>';
+                        self.yelpReviews.push(new YelpReview(articleList[i].name, url,articleList[i].rating_img_url));
+                    }
+                    clearTimeout(yelpRequestTimeout);
+                    self.yelpTitle('Yelp Results for ' + self.markerList()[clickedMarkerIndex].name());
+
+                },
+                'error': function(data, textStats, XMLHttpRequest) {
+                    console.log('Yelp query did not work');
+                    console.log(XMLHttpRequest);
+                //$yelpElem.text("failed to get Yelp reviews");
+                }
+            });
+        } else {
+            self.yelpTitle('Click on a Forest Preserve in the list and find relevant Yelp reviews here!');
+            self.yelpReviews.removeAll();
+        }
+    };
+};
+
+ko.applyBindings(new ViewModel());
+
+// initMap - This function is invoked by googleSuccess callback function
+// In this function the markers and infoWindows are created.
+// event listeners for click action is setup
+function initMap(map) {
         globalMap = map;
         // create markers for all the forest preserves
-        for (var l in value.locations())
-        {
+        for (var l = 0; l < mapMarkerData.length; l++) {
+
             var latLng = new google.maps.LatLng(
-                            value.locations()[l].latitude(),
-                            value.locations()[l].longitude());
+                    mapMarkerData[l].latitude,
+                    mapMarkerData[l].longitude);
 
             var marker = new google.maps.Marker({
-                position: latLng,
-                animation: google.maps.Animation.DROP,
-                title: value.locations()[l].name(),
-                map: map
-              });
+                    position: latLng,
+                    animation: google.maps.Animation.DROP,
+                    title: mapMarkerData[l].name,
+                    icon:'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    map: globalMap
+                });
             // push the marker to the global markers array
             markers.push(marker);
             // createa InfoWindow object
@@ -452,36 +441,30 @@ ko.bindingHandlers.googlemap = {
             var content = '<div id="content">'+
                            '<div id="siteNotice">'+
                            '</div>'+
-                           '<h2 id="firstHeading" class="firstHeading">' + value.locations()[l].name() + '</h2>'+
+                           '<h2 id="firstHeading" class="firstHeading">' + mapMarkerData[l].name + '</h2>'+
                            '<div id="bodyContent">'+
-                           '<p><b>Address: </b>' + value.locations()[l].address() +
-                           '<b> latitude: </b> '+ value.locations()[l].latitude() +
-                           '<b> longitude: </b>'+ value.locations()[l].longitude() + '</p><br><br>' +
-                           '<img src="http://maps.googleapis.com/maps/api/streetview?size=600x100&location='+value.locations()[l].address()+'"'+
+                           '<p><b>Address: </b>' + mapMarkerData[l].street + ", " + mapMarkerData[l].city +
+                           '<b> latitude: </b> '+ mapMarkerData[l].latitude +
+                           '<b> longitude: </b>'+ mapMarkerData[l].longitude + '</p><br><br>' +
+                           '<img src="http://maps.googleapis.com/maps/api/streetview?size=600x100&location='+ mapMarkerData[l].street + ", " + mapMarkerData[l].city+'"'+
                            '</div>'+
                            '</div>';
-            // Add a listener for mouseover event which will display the infowindow and also sets the animation to BOUNCE
-            google.maps.event.addListener(marker, 'mouseover', (function(marker,content,infoWindow) {
+            // Add a listener for mouseover event which will display the infowindow and
+            // also sets the animation to BOUNCE
+            google.maps.event.addListener(marker, 'click', (function(marker,content,infoWindow) {
                         return function() {
                             infoWindow.setContent(content);
-                            infoWindow.open(map, marker);
-                            marker.setAnimation(google.maps.Animation.BOUNCE);
-                        }  
+                            infoWindow.open(globalMap, marker);
+                            marker.setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+                            //marker.setAnimation(google.maps.Animation.BOUNCE);
+                        };  
             })(marker,content,infoWindow));
-            // Add a listener for mouseout event which will close the infowindow
-            google.maps.event.addListener(marker, 'mouseout', (function(marker,infoWindow) {
-                        return function() {
-                            infoWindow.close(map, marker);
-                            marker.setAnimation(google.maps.Animation.DROP);
-                        }  
-            })(marker,infoWindow));
+
             // Save the infowindows objects and the content strings in global arrays
             infoWindows_content.push(content);
             infoWindows.push(infoWindow);
         }
-        // Now that all markers, infowindows are created and map is initialized, set the mapInitialized variable to true
-        mapInitialized = true; 
-    }
+    // Now that all markers, infowindows are created and map is initialized,
+    // set the mapInitialized variable to true
+    mapInitialized = true; 
 };
-
-ko.applyBindings(new ViewModel());
