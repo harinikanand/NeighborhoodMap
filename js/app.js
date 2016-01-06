@@ -410,9 +410,21 @@ var ViewModel = function() {
             self.yelpReviews.removeAll();
         }
     };
-};
 
-ko.applyBindings(new ViewModel());
+    this.clickedMarker = function(title) {
+    	if (mapInitialized === true) {
+            for (var i = 0; i < markers_len; ++i) {
+                if (markers[i].getTitle() === title) {
+                    displayWikipediaReviews(i);
+                    displayYelpReviews(i);
+                }
+            }
+        }
+    };
+};
+var vm = new ViewModel();
+
+ko.applyBindings(vm);
 
 // initMap - This function is invoked by googleSuccess callback function
 // In this function the markers and infoWindows are created.
@@ -457,6 +469,7 @@ function initMap(map) {
                             infoWindow.open(globalMap, marker);
                             marker.setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
                             //marker.setAnimation(google.maps.Animation.BOUNCE);
+                            vm.clickedMarker(marker.getTitle());
                         };  
             })(marker,content,infoWindow));
 

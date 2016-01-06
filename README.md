@@ -19,24 +19,17 @@ and drag and drop the index.html in the folder on to it.
 
 Description:
 ============
-As part of the neighborhood Map project, I implemented a Map
-to display the various forest preserves areas in Chicago area.
+As part of the neighborhood Map project, I implemented a Map to display the various forest preserves areas in Chicago area.
 
-Opening the index.html will display a page that on the left hand shows the
-list of locations (forest preserve areas) along with a filter/search option, 
-in the middle a chicago area Map
-and to the right two boxes that are stacked and they display the wikipedia and yelp
-reviews of the forest preserve area selected and others attractions near it 
-respectively.
+Opening the index.html will display a page that on the left hand shows the list of locations (forest preserve areas) along with a filter/search option, in the middle a chicago area Map and to the right two boxes that are stacked and they display the wikipedia and yelp reviews of the forest preserve area selected and others attractions near it respectively.
 
-The filter option enables user to enter characters based on the locations in the
-list view are filtered. At the same time, the map in the middle is updated to only show the filtered locations along with infoWindow showing address, latitude, longitude and a streetview image.
-If the filtration results in only one location, then relevant wikipedia and yelp reviews about the location and other attractions near it on the right hand side.
+The filter option enables user to enter characters based on the locations in the list view are filtered. At the same time, the map in the middle is updated to only show the filtered locations along with infoWindow showing address, latitude, longitude and a streetview image.
 
 
-Clicking on location updates the map view only show selected location with infoWindow opened displaying address, latitude, longitude and a streetview image.
-It also shows the relevant wikipedia and yelp reviews about the location and other
-attractions near it on the right hand side.
+Clicking on item in the list updates the map view to only show the selected location with infoWindow opened displaying the address, latitude, longitude and a streetview image. The marker is shown with a BOUNCE animation. It also shows the relevant wikipedia and yelp reviews about the location and other attractions near it on the right hand side.
+
+Additionally, clicking on a marker on the map changes the marker color (from green to blue) and shows the infoWindow displaying the address, latitude, longitude and a streetview image of location that is represented by the marker that is clicked. It also shows the relevant wikipedia and yelp reviews about the location and other attractions near it on the right hand side.
+
 
 
 Sources and References:
