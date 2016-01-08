@@ -16,7 +16,6 @@
         <label for="filter">Filter:</label>
         <input type="text" data-bind="value: filter, valueUpdate: 'afterkeydown'" />
         <button class="clear" data-bind="click: clear">Clear</button>
-        <button class="all" data-bind="click: showAll">Show All</button>
         <ul data-bind="foreach: filteredMarkers">
             <li data-bind="text: name, click: $parent.displayMarker"></li>
         </ul>
@@ -30,7 +29,7 @@
         <h3>Relevant Wikipedia Links about the area </h3>
         <hr>
         <h4 class= "review-title" data-bind="text: wikiTitle"></h4>
-        <ul class="review-links" data-bind="foreach: wikiReviews">
+        <ul class="review-links" data-bind="foreach: wikiArticles">
             <li><a data-bind="attr: { href: url, title: name}, text: name"></a></li>
         </ul>
     </div>
@@ -61,7 +60,7 @@
             initMap(map);
        }
     </script>
-    <script  async src="http://maps.googleapis.com/maps/api/js?libraries=places&amp;callback=googleSuccess"></script>
+    <script  async src="http://maps.googleapis.com/maps/api/js?libraries=places&callback=googleSuccess"></script>
     <script  src="http://oauth.googlecode.com/svn/code/javascript/oauth.js"></script>
     <script  src="http://oauth.googlecode.com/svn/code/javascript/sha1.js"></script>
 </body>

@@ -2,13 +2,6 @@
 // Array to store information about forest preserve areas in Chicago
 // stores name, street, city, latitude and longitude
 var mapMarkerData = [
-{ 
-    name: 'Dan Ryan Woods',
-    street: '8300 S Western Ave',
-    city: 'Chicago, IL 60620',
-    latitude: 41.736284,
-    longitude: -87.679113
-},
 {
     name: 'Thatcher Woods',
     street: '8030 Chicago Ave',
@@ -29,6 +22,13 @@ var mapMarkerData = [
     city: 'River Forest, IL 60305',
     latitude: 41.918359,
     longitude: -87.831988
+},
+{ 
+    name: 'Dan Ryan Woods',
+    street: '8300 S Western Ave',
+    city: 'Chicago, IL 60620',
+    latitude: 41.736284,
+    longitude: -87.679113
 },
 {
     name: 'Portage Woods',
@@ -169,14 +169,14 @@ var ViewModel = function() {
     this.filter = ko.observable("");
 
 
-    this.wikiTitle = ko.observable('Click on a Forest Preserve in the list and find relevant Wikipedia reviews here!');
+    this.wikiTitle = ko.observable('Click on a Forest Preserve in the list and find relevant Wikipedia articles here!');
 
     var WikiReview = function(titlename, url) {
         this.name = titlename;
         this.url = url;
     };
 
-    this.wikiReviews = ko.observableArray([]);
+    this.wikiArticles = ko.observableArray([]);
 
     this.yelpTitle = ko.observable('Click on a Forest Preserve in the list and find relevant yelp reviews here!');
 
@@ -198,7 +198,7 @@ var ViewModel = function() {
     // This leads to display fitlered list and showing only the filtered markers on the map.
     this.filteredMarkers = ko.computed(function() {
         var filter = this.filter().toLowerCase();
-        displayWikipediaReviews(-1);
+        displayWikiArticles(-1);
         displayYelpReviews(-1);
         if(!filter) {
             if (mapInitialized === true) {
@@ -231,10 +231,7 @@ var ViewModel = function() {
                         markers[i].setVisible(false); // marker not is filtered list, so do no show it on map
                         infoWindows[i].close(globalMap, markers[i]); // close the infoWindow 
                     } else { // marker in filtered list
-                        markers[i].setAnimation(google.maps.Animation.BOUNCE); // set marker animation to Bounce
-                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
-                        infoWindows[i].setContent(infoWindows_content[i]); // set and show the infoWindow for the marker
-                        infoWindows[i].open(globalMap, markers[i]);
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
                     }
                 }
             }
@@ -246,16 +243,16 @@ var ViewModel = function() {
     this.displayMarker = function() {
         if (mapInitialized === true) {
                 for (var i = 0; i < markers_len; ++i) {
+                    markers[i].setVisible(true);                	
                     if (markers[i].getTitle() === this.name()) {
-                        markers[i].setVisible(true);
-                        markers[i].setAnimation(google.maps.Animation.BOUNCE);
-                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
                         infoWindows[i].setContent(infoWindows_content[i]); 
                         infoWindows[i].open(globalMap, markers[i]);
-                        displayWikipediaReviews(i);
+                        displayWikiArticles(i);
                         displayYelpReviews(i);
                     } else {
-                        markers[i].setVisible(false);
+                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
+                        markers[i].setAnimation(google.maps.Animation.NONE);
                         infoWindows[i].close(globalMap, markers[i]);
                     }
 
@@ -263,65 +260,52 @@ var ViewModel = function() {
         }
     };
 
-    this.showAll = function() {
-        if (mapInitialized === true) {
-                for (var i = 0; i < markers_len; ++i) {
-                        markers[i].setVisible(true);
-                        markers[i].setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
-                        markers[i].setAnimation(google.maps.Animation.DROP);
-                        infoWindows[i].close(globalMap, markers[i]);            
-                }
-                displayWikipediaReviews(-1);
-                displayYelpReviews(-1);
-
-        }
-        this.filter("");
-    };
-
     // clear - the function is invoked when clear button is selected by the user
     this.clear = function() {
         // this function sets filter to empty string
         this.filter("");
-        displayWikipediaReviews(-1);
+        displayWikiArticles(-1);
         displayYelpReviews(-1);
     };
 
-    // displayWikipediaReviews takes the index of the marker clicked by user
+    // displayWikiArticles takes the index of the marker clicked by user
     // (this is passed to the function by displayMarker function) and uses
     // the ajax asynchronously query to Media Wiki API
-    // to obtain results and updates the wikiTitle and wikiReviews knockout observables 
+    // to obtain results and updates the wikiTitle and wikiArticles knockout observables 
     // The Wiki URL uses geosearch and hence uses the latitude and longitude
-    function displayWikipediaReviews(clickedMarkerIndex) {
+    function displayWikiArticles(clickedMarkerIndex) {
 
         if (clickedMarkerIndex != -1) {
 
             // Plug in the latlon provided in the wiki media geosearch URL
             var wikiUrl = 'http://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=10000&gslimit=10&gscoord='+self.markerList()[clickedMarkerIndex].latlon()+'&format=json&callback=?';
-            // Error handling - if no response, an error is shown
-            var wikiRequestTimeout = setTimeout(function() {
-               self.wikiReviews.removeAll();
-               self.wikiTitle('failed to get wikipedia results');
-            }, 8000);
 
-            $.ajax({
+
+            var wikiRequest = $.ajax({
                 url: wikiUrl,
                 dataType: 'jsonp',
-                success: function(response) {
-                    self.wikiReviews.removeAll();
+                timeout: 8000 });
+
+            wikiRequest.done(function(response) {
+                    self.wikiArticles.removeAll();
                     var articleList = response.query["geosearch"];
                     for (var i=0;i < articleList.length; i++) {
                       var articlePageId = articleList[i].pageid;
                       var articleTitle = articleList[i].title;
                       var url = 'https://en.wikipedia.org/?curid=' + articlePageId;
-                      self.wikiReviews.push(new WikiReview(articleTitle, url));
+                      self.wikiArticles.push(new WikiReview(articleTitle, url));
                     }
-                    clearTimeout(wikiRequestTimeout);
                     self.wikiTitle('Wikipedia Results for ' + self.markerList()[clickedMarkerIndex].name());
-                }
+                });
+
+            wikiRequest.fail(function(jqXHR, textStatus) {
+                	self.wikiArticles.removeAll();
+                    self.wikiTitle('failed to get wikipedia results');
             });
+
         } else {
             self.wikiTitle('Click on a Forest Preserve in the list and find relevant Wikipedia reviews here!');
-            self.wikiReviews.removeAll();
+            self.wikiArticles.removeAll();
         }
     };
 
@@ -372,20 +356,15 @@ var ViewModel = function() {
             var parameterMap = OAuth.getParameterMap(message.parameters);
             parameterMap.oauth_signature = OAuth.percentEncode(parameterMap.oauth_signature);
 
-
-            // Error handling - if no response, an error is shown
-            var yelpRequestTimeout = setTimeout(function() {
-                self.yelpTitle('failed to get Yelp reviews');
-                self.yelpReviews.removeAll();
-            }, 60000);
-
-            $.ajax({
+            var yelpRequest = $.ajax({
                 'url': message.action,
                 'data': parameterMap,
                 'cache': true,
                 'dataType': 'jsonp',
                 'type': 'get',
-                'success': function(data, textStats, XMLHttpRequest) {
+                'timeout': 60000});
+
+            yelpRequest.done(function(data, textStats, XMLHttpRequest) {
                     var articleList = data["businesses"];
                     //start with setting empty string to the yelp-links element
                     self.yelpReviews.removeAll();
@@ -395,16 +374,17 @@ var ViewModel = function() {
                         //yelp_content = yelp_content + '<li><a href="'+url+'">'+articleList[i].name+" "+'</a><img src="'+articleList[i].rating_img_url+'"></li>';
                         self.yelpReviews.push(new YelpReview(articleList[i].name, url,articleList[i].rating_img_url));
                     }
-                    clearTimeout(yelpRequestTimeout);
                     self.yelpTitle('Yelp Results for ' + self.markerList()[clickedMarkerIndex].name());
 
-                },
-                'error': function(data, textStats, XMLHttpRequest) {
+                });
+
+            yelpRequest.fail(function(data, textStats, XMLHttpRequest) {
                     console.log('Yelp query did not work');
                     console.log(XMLHttpRequest);
-                //$yelpElem.text("failed to get Yelp reviews");
-                }
+                    self.yelpTitle('failed to get Yelp reviews');
+                    self.yelpReviews.removeAll();
             });
+
         } else {
             self.yelpTitle('Click on a Forest Preserve in the list and find relevant Yelp reviews here!');
             self.yelpReviews.removeAll();
@@ -415,7 +395,7 @@ var ViewModel = function() {
     	if (mapInitialized === true) {
             for (var i = 0; i < markers_len; ++i) {
                 if (markers[i].getTitle() === title) {
-                    displayWikipediaReviews(i);
+                    displayWikiArticles(i);
                     displayYelpReviews(i);
                 }
             }
@@ -461,15 +441,34 @@ function initMap(map) {
                            '<img src="http://maps.googleapis.com/maps/api/streetview?size=600x100&location='+ mapMarkerData[l].street + ", " + mapMarkerData[l].city+'"'+
                            '</div>'+
                            '</div>';
-            // Add a listener for mouseover event which will display the infowindow and
-            // also sets the animation to BOUNCE
+            // Add a listener for click event which will display the infowindow and
+            // also sets icon color to blue
             google.maps.event.addListener(marker, 'click', (function(marker,content,infoWindow) {
                         return function() {
                             infoWindow.setContent(content);
                             infoWindow.open(globalMap, marker);
-                            marker.setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+                            marker.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
                             //marker.setAnimation(google.maps.Animation.BOUNCE);
                             vm.clickedMarker(marker.getTitle());
+                        };  
+            })(marker,content,infoWindow));
+
+            // Add a listener for mouseover event which will close the infowindow and
+            // also sets icon color to green
+            google.maps.event.addListener(marker, 'mouseout', (function(marker,content,infoWindow) {
+                        return function() {
+                            infoWindow.close(globalMap, marker);
+                            marker.setAnimation(google.maps.Animation.NONE);
+                            marker.setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
+                        };  
+            })(marker,content,infoWindow));
+
+            // Add a listener for mouseover event which will close the infowindow and
+            // also sets icon color to green
+            google.maps.event.addListener(infoWindow, 'closeclick', (function(infoWindow) {
+                        return function() {
+                            marker.setAnimation(google.maps.Animation.NONE);
+                            marker.setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
                         };  
             })(marker,content,infoWindow));
 
